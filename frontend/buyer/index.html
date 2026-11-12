@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Account — NovaMarket</title>
+  <meta name="description" content="Manage your orders, wishlist, addresses and account settings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="container section-sm">
+    <div class="dash-layout">
+      <aside class="dash-sidebar" id="dash-sidebar">
+        <a href="#overview" class="dash-link active" data-tab="overview"><i class="fas fa-home"></i>Overview</a>
+        <a href="#orders" class="dash-link" data-tab="orders"><i class="fas fa-box"></i>My Orders</a>
+        <a href="#wishlist" class="dash-link" data-tab="wishlist"><i class="far fa-heart"></i>Wishlist</a>
+        <a href="#addresses" class="dash-link" data-tab="addresses"><i class="fas fa-map-marker-alt"></i>Addresses</a>
+        <a href="#notifications" class="dash-link" data-tab="notifications"><i class="far fa-bell"></i>Notifications</a>
+        <a href="#profile" class="dash-link" data-tab="profile"><i class="far fa-user"></i>Profile</a>
+        <a href="#security" class="dash-link" data-tab="security"><i class="fas fa-lock"></i>Security</a>
+      </aside>
+
+      <div id="dash-content"><div class="spinner"></div></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/products.js"></script>
+  <script src="/assets/js/buyer.js"></script>
+</body>
+</html>

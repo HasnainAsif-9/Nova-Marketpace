@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Cart — NovaMarket</title>
+  <meta name="description" content="Review your cart and proceed to checkout.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="container section-sm">
+    <div class="page-header">
+      <h1>Shopping Cart</h1>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 360px;align-items:start" id="cart-layout">
+      <div>
+        <div id="cart-items"><div class="spinner"></div></div>
+        <div id="cart-empty" class="hidden">
+          <div class="empty-state card" style="padding:var(--nm-space-12)">
+            <i class="fas fa-shopping-cart"></i>
+            <h3>Your cart is empty</h3>
+            <p>Discover amazing products from our sellers.</p>
+            <a href="/shop.html" class="btn btn-primary mt-4">Start Shopping</a>
+          </div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="summary-card">
+          <h3 class="mb-4">Order Summary</h3>
+          <div class="summary-row"><span>Subtotal</span><strong id="cart-subtotal">—</strong></div>
+          <div class="summary-row"><span>Delivery</span><span class="text-muted">Calculated at checkout</span></div>
+          <div class="summary-row total"><span>Total</span><span id="cart-total">—</span></div>
+          <a href="/checkout.html" class="btn btn-primary btn-lg btn-block mt-4" id="checkout-btn">Proceed to Checkout</a>
+          <a href="/shop.html" class="btn btn-ghost btn-block mt-2">Continue Shopping</a>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/cart.js"></script>
+</body>
+</html>

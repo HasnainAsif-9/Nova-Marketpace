@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: novamarket
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --graceful-timeout 30
+    healthCheckPath: /api/health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_NAME
+        value: marketplace
+      - key: MARKETPLACE_NAME
+        value: NovaMarket
+      - key: CURRENCY
+        value: PKR
+      - key: CURRENCY_SYMBOL
+        value: Rs.
+      - key: DEFAULT_COMMISSION_RATE
+        value: "10"
+      - key: DELIVERY_FEE_STANDARD
+        value: "20"
+      - key: DELIVERY_FEE_EXPRESS
+        value: "50"
+      - key: FREE_DELIVERY_THRESHOLD
+        value: "0"
+      - key: REQUIRE_SELLER_APPROVAL
+        value: "true"
+      - key: REQUIRE_PRODUCT_APPROVAL
+        value: "false"
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "false"
+      - key: PAYMENT_METHODS_ENABLED
+        value: cod
+      - key: FRONTEND_BASE_URL
+        sync: false
+      # Secrets — fill in the Render dashboard (never commit real values)
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      # Email — optional until SMTP is configured
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false

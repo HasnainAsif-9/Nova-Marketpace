@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      MONGODB_URI: mongodb://${MONGO_USER:-marketplace}:${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}@mongo:27017/?authSource=admin
+      DATABASE_NAME: ${DATABASE_NAME:-marketplace}
+      MARKETPLACE_NAME: ${MARKETPLACE_NAME:-NovaMarket}
+      CURRENCY: ${CURRENCY:-PKR}
+      CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-Rs.}
+      DEFAULT_COMMISSION_RATE: ${DEFAULT_COMMISSION_RATE:-10}
+      DELIVERY_FEE_STANDARD: ${DELIVERY_FEE_STANDARD:-20}
+      DELIVERY_FEE_EXPRESS: ${DELIVERY_FEE_EXPRESS:-50}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-marketplace}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    # NOTE: MONGO_INITDB_* only applies when the volume is first initialized.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "-u", "${MONGO_USER:-marketplace}", "-p", "${MONGO_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo_data:

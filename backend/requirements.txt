@@ -1,0 +1,10 @@
+Flask==3.0.3
+PyMongo==4.7.3
+PyJWT==2.9.0
+Werkzeug==3.0.3
+python-dotenv==1.0.1
+Pillow==10.4.0
+gunicorn==22.0.0
+pytest==8.2.2
+mongomock==4.1.2
+setuptools<81

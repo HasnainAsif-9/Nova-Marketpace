@@ -1,0 +1,27 @@
+# Secrets — never bake into the image
+**/.env
+.env.*
+!.env.example
+
+# Python caches / tests
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# VCS / editor / OS
+.git/
+.gitignore
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Docs not needed at runtime
+*.md
+PROGRESS.md
+SECURITY_AUDIT.md

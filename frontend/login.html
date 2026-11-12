@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — NovaMarket</title>
+  <meta name="description" content="Sign in to your NovaMarket account.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="auth-wrap">
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="auth-sub">Sign in to your NovaMarket account</p>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-id">Email or Username</label>
+          <input id="login-id" class="form-control" type="text" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-pass">Password</label>
+          <input id="login-pass" class="form-control" type="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="login-btn">Sign In</button>
+      </form>
+
+      <p class="text-center text-sm mt-4"><a href="/forgot-password.html">Forgot your password?</a></p>
+      <p class="text-center text-sm text-muted mt-4">
+        New to NovaMarket? <a href="/register.html">Create an account</a>
+      </p>
+      <p class="text-center text-sm mt-4"><a href="/" class="text-muted">← Continue browsing</a></p>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/auth.js"></script>
+</body>
+</html>

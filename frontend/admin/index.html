@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — NovaMarket</title>
+  <meta name="description" content="Marketplace administration.">
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="container section-sm">
+    <div class="dash-layout">
+      <aside class="dash-sidebar" id="dash-sidebar">
+        <a href="#overview" class="dash-link active" data-tab="overview"><i class="fas fa-home"></i>Overview</a>
+        <a href="#analytics" class="dash-link" data-tab="analytics"><i class="fas fa-chart-bar"></i>Analytics</a>
+        <a href="#users" class="dash-link" data-tab="users"><i class="fas fa-users"></i>Users</a>
+        <a href="#sellers" class="dash-link" data-tab="sellers"><i class="fas fa-store"></i>Sellers</a>
+        <a href="#products" class="dash-link" data-tab="products"><i class="fas fa-box"></i>Products</a>
+        <a href="#categories" class="dash-link" data-tab="categories"><i class="fas fa-tags"></i>Categories</a>
+        <a href="#orders" class="dash-link" data-tab="orders"><i class="fas fa-shopping-bag"></i>Orders</a>
+        <a href="#commissions" class="dash-link" data-tab="commissions"><i class="fas fa-percent"></i>Commissions</a>
+        <a href="#settings" class="dash-link" data-tab="settings"><i class="fas fa-cog"></i>Settings</a>
+        <a href="#audit" class="dash-link" data-tab="audit"><i class="fas fa-history"></i>Audit Logs</a>
+        <a href="#security" class="dash-link" data-tab="security"><i class="fas fa-lock"></i>Security</a>
+      </aside>
+
+      <div id="dash-content"><div class="spinner"></div></div>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/admin.js"></script>
+</body>
+</html>

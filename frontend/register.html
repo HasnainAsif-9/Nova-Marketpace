@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — NovaMarket</title>
+  <meta name="description" content="Join NovaMarket — shop or sell.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <main class="auth-wrap">
+    <div class="auth-card" style="max-width:520px">
+      <h1>Create your account</h1>
+      <p class="auth-sub">Shop thousands of products or start selling today</p>
+
+      <div class="flex gap-2 mb-4" role="tablist">
+        <button type="button" class="btn btn-outline btn-block" id="role-buyer" style="flex:1">🛍️ I want to buy</button>
+        <button type="button" class="btn btn-primary btn-block" id="role-seller" style="flex:1">🏪 I want to sell</button>
+      </div>
+
+      <form id="register-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="reg-username">Username *</label>
+            <input id="reg-username" class="form-control" required minlength="3" maxlength="30" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-fullname">Full Name</label>
+            <input id="reg-fullname" class="form-control" autocomplete="name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-email">Email *</label>
+          <input id="reg-email" class="form-control" type="email" required autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-phone">Phone</label>
+          <input id="reg-phone" class="form-control" type="tel" autocomplete="tel">
+        </div>
+        <div id="seller-fields" class="hidden">
+          <div class="form-group">
+            <label class="form-label" for="reg-store">Store Name *</label>
+            <input id="reg-store" class="form-control" placeholder="Your store name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-store-desc">Store Description</label>
+            <textarea id="reg-store-desc" class="form-textarea" style="min-height:80px" placeholder="Tell buyers about your store..."></textarea>
+          </div>
+          <p class="text-sm text-muted mb-4"><i class="fas fa-info-circle"></i> Seller accounts require admin approval before you can list products.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass">Password * <span class="text-muted font-normal">(min 8 characters)</span></label>
+          <input id="reg-pass" class="form-control" type="password" required minlength="8" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-pass2">Confirm Password *</label>
+          <input id="reg-pass2" class="form-control" type="password" required minlength="8" autocomplete="new-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="reg-btn">Create Account</button>
+      </form>
+
+      <p class="text-center text-sm text-muted mt-4">
+        Already have an account? <a href="/login.html">Sign in</a>
+      </p>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/auth.js"></script>
+</body>
+</html>

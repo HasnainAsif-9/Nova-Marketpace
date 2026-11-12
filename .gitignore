@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Node (if any tooling added later)
+node_modules/
+
+# Uploads / generated
+backend/uploads/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local tools / backups
+cloudflared.exe
+*.bak-*
+START-SERVER.bat
