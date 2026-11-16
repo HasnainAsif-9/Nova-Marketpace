@@ -920,3 +920,77 @@ class TestPayments:
         r = client.post("/api/payments/webhook/cod", data=b"{}",
                         content_type="application/json")
         assert r.status_code == 501
+
+
+# ================= REFRESH TOKEN ROTATION =================
+
+class TestRefreshRotation:
+    def _refresh_cookie(self, resp):
+        for h in resp.headers.getlist("Set-Cookie"):
+            if h.startswith("refresh_token="):
+                return h.split("refresh_token=", 1)[1].split(";", 1)[0]
+        return None
+
+    def test_refresh_rotates_token(self, client):
+        register(client, "rot_user", "rot@test.com")
+        resp = client.post("/api/auth/login",
+                           json={"email": "rot@test.com", "password": "password123"})
+        old_refresh = self._refresh_cookie(resp)
+        assert old_refresh
+        r = client.post("/api/auth/refresh")
+        assert r.status_code == 200
+        new_refresh = self._refresh_cookie(r)
+        assert new_refresh and new_refresh != old_refresh
+
+    def test_reused_refresh_token_revokes_session(self, client, app, db):
+        """Replaying a rotated-out refresh token must revoke all sessions."""
+        register(client, "reuse_user", "reuse@test.com")
+        resp = client.post("/api/auth/login",
+                           json={"email": "reuse@test.com", "password": "password123"})
+        old_refresh = self._refresh_cookie(resp)
+        # First refresh consumes the old token and rotates
+        r = client.post("/api/auth/refresh")
+        assert r.status_code == 200
+        # Replaying the OLD token = reuse -> all sessions revoked.
+        # A fresh client + Bearer header is used so the jar's rotated
+        # cookie can't interfere.
+        raw = app.test_client()
+        r = raw.post("/api/auth/refresh",
+                     headers={"Authorization": f"Bearer {old_refresh}"})
+        assert r.status_code == 401
+        # Even the newest refresh token is now dead (token_version bumped)
+        user = db.users.find_one({"email": "reuse@test.com"})
+        assert user["token_version"] == 1
+        r = client.post("/api/auth/refresh")
+        assert r.status_code == 401
+        # But the user can still log in fresh
+        client.post("/api/auth/logout")
+        r = client.post("/api/auth/login",
+                        json={"email": "reuse@test.com", "password": "password123"})
+        assert r.status_code == 200
+
+    def test_logout_revokes_refresh_token(self, client, app):
+        register(client, "lo_user", "lo@test.com")
+        resp = client.post("/api/auth/login",
+                           json={"email": "lo@test.com", "password": "password123"})
+        refresh = self._refresh_cookie(resp)
+        client.post("/api/auth/logout")
+        raw = app.test_client()
+        r = raw.post("/api/auth/refresh",
+                     headers={"Authorization": f"Bearer {refresh}"})
+        assert r.status_code == 401
+
+
+class TestMaintenanceModeStrict:
+    def test_maintenance_mode_rejects_string(self, client, db):
+        make_admin(db)
+        client.post("/api/auth/login",
+                    json={"email": "admin@test.com", "password": "adminpass123"})
+        r = client.put("/api/settings", json={"maintenance_mode": "false"})
+        assert r.status_code == 400
+        r = client.put("/api/settings", json={"maintenance_mode": "true"})
+        assert r.status_code == 400
+        r = client.put("/api/settings", json={"maintenance_mode": True})
+        assert r.status_code == 200
+        # cleanup so other tests are unaffected
+        client.put("/api/settings", json={"maintenance_mode": False})

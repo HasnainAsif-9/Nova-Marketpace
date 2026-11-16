@@ -289,6 +289,10 @@
     API.get("/settings").then(r => {
       if (r.data && r.data.settings && r.data.settings.currency_symbol) symbol = r.data.settings.currency_symbol;
     }).catch(() => {});
+    // Returning from a hosted payment page (e.g. Stripe Checkout)
+    const payStatus = new URLSearchParams(location.search).get("payment");
+    if (payStatus === "success") toast("Payment submitted — your order will update once confirmed.");
+    if (payStatus === "cancelled") toast("Payment was cancelled. Your order is still pending.", "warning");
     const tab = location.hash.replace("#", "") || "overview";
     switchTab(tabs[tab] ? tab : "overview");
   })();

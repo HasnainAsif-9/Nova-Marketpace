@@ -81,21 +81,36 @@ def seed(app=None):
         else:
             print("Demo seller already exists")
 
-        # Demo products
+        # Demo products — images are hot-linked from Unsplash (demo only;
+        # production sellers should upload their own images).
+        IMG = "https://images.unsplash.com/{}?auto=format&fit=crop&w=800&q=80"
         products = [
-            ("Wireless Bluetooth Headphones", "electronics", 2499, 3499, 45, "Audio"),
-            ("Smart Watch Series 5", "electronics", 8999, 12999, 20, "Wearables"),
-            ("USB-C Fast Charger 65W", "electronics", 1499, 0, 120, "Accessories"),
-            ("Cotton Casual T-Shirt", "fashion", 899, 1299, 200, "Apparel"),
-            ("Running Shoes Pro", "sports", 4499, 5999, 60, "Footwear"),
-            ("Ceramic Coffee Mug Set", "home-living", 1299, 0, 80, "Kitchen"),
-            ("Vitamin C Serum 30ml", "beauty", 1799, 2499, 150, "Skincare"),
-            ("Python Crash Course Book", "books", 1599, 0, 35, "Programming"),
+            ("Wireless Bluetooth Headphones", "electronics", 2499, 3499, 45, "Audio",
+             IMG.format("photo-1505740420928-5e560c06d30e")),
+            ("Smart Watch Series 5", "electronics", 8999, 12999, 20, "Wearables",
+             IMG.format("photo-1546868871-7041f2a55e12")),
+            ("USB-C Fast Charger 65W", "electronics", 1499, 0, 120, "Accessories",
+             IMG.format("photo-1583863788434-e58a36330cf0")),
+            ("Cotton Casual T-Shirt", "fashion", 899, 1299, 200, "Apparel",
+             IMG.format("photo-1521572163474-6864f9cf17ab")),
+            ("Running Shoes Pro", "sports", 4499, 5999, 60, "Footwear",
+             IMG.format("photo-1542291026-7eec264c27ff")),
+            ("Ceramic Coffee Mug Set", "home-living", 1299, 0, 80, "Kitchen",
+             IMG.format("photo-1544787219-7f47ccb76574")),
+            ("Vitamin C Serum 30ml", "beauty", 1799, 2499, 150, "Skincare",
+             IMG.format("photo-1556228578-8c89e6adf883")),
+            ("Python Crash Course Book", "books", 1599, 0, 35, "Programming",
+             IMG.format("photo-1512820790803-83ca734da794")),
         ]
         count = 0
-        for name, cat_slug, price, compare, stock, brand in products:
+        for name, cat_slug, price, compare, stock, brand, image in products:
             slug = slugify(name)
-            if db.products.find_one({"slug": slug}):
+            existing = db.products.find_one({"slug": slug})
+            if existing:
+                # Backfill images on demo products still using the placeholder
+                if existing.get("images") == ["/assets/images/placeholder.svg"]:
+                    db.products.update_one(
+                        {"_id": existing["_id"]}, {"$set": {"images": [image]}})
                 continue
             db.products.insert_one({
                 "name": name,
@@ -106,7 +121,7 @@ def seed(app=None):
                 "price": price,
                 "compare_price": compare,
                 "stock": stock,
-                "images": ["/assets/images/placeholder.svg"],
+                "images": [image],
                 "category_id": cat_ids.get(cat_slug),
                 "brand": brand,
                 "tags": [brand.lower()],

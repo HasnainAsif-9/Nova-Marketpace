@@ -6,6 +6,13 @@
 - Payment gateway abstraction: `backend/app/payments/gateway.py` — `PaymentGateway` base, `CODGateway` live, `StripeGateway`/`JazzCashGateway`/`EasyPaisaGateway` stubs gated on credentials. Enable via `PAYMENT_METHODS_ENABLED` + provider env keys (see `.env.example`). New endpoints: `GET /api/payments/methods`, `POST /api/payments/webhook/<method>`.
 - Email templates: `backend/app/utils/email_templates.py` (verify/reset/order-confirmation, text+HTML); `send_email()` accepts `html=`. Order-confirmation email is TODO — wire into checkout once SMTP is configured.
 
+## Render deployment prep (2026-11-12)
+- `render.yaml` blueprint (free plan, Python 3.12, gunicorn, rootDir=backend, healthCheck /api/health)
+- `RENDER_DEPLOYMENT.md` — GitHub → Atlas M0 → Render steps + env var table
+- Git repo initialized, initial commit `e9b9c74`; `.env`/`.venv`/secrets verified excluded
+- No disk uploads exist (product images are URL strings) → Render ephemeral FS is a non-issue
+- Backup: `marketplace-backup-20261112-160140.zip`
+
 ## Current runtime (2026-11-12)
 - MongoDB 7 runs in Docker: `docker start novamarket-mongo` (container `novamarket-mongo`, port 27017, volume `mongo_data`)
 - `.env` uses `MONGODB_URI=mongodb://localhost:27017` (real DB, data persists)

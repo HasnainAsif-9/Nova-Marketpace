@@ -8,6 +8,11 @@
   let deliveryFee = 0;
   let cart = null;
   let step = 1;
+  let paymentMethods = [];
+  let selectedPayment = "cod";
+
+  const PAYMENT_ICONS = { cod: "fa-money-bill-wave", stripe: "fa-credit-card", jazzcash: "fa-mobile-screen", easypaisa: "fa-wallet" };
+  const PAYMENT_HINTS = { cod: "Pay when your order arrives", stripe: "Pay securely by card", jazzcash: "Pay with your JazzCash wallet", easypaisa: "Pay with your EasyPaisa wallet" };
 
   const steps = ["step-address", "step-delivery", "step-payment", "step-confirm"];
 
@@ -101,6 +106,27 @@
     }).join("");
   }
 
+  async function loadPaymentMethods() {
+    try {
+      const res = await API.get("/payments/methods");
+      paymentMethods = (res.data && res.data.methods) || [];
+    } catch (e) { paymentMethods = []; }
+    if (!paymentMethods.length) paymentMethods = [{ id: "cod", name: "Cash on Delivery" }];
+    if (!paymentMethods.some(m => m.id === selectedPayment)) {
+      selectedPayment = paymentMethods[0].id;
+    }
+    const el = $("payment-methods");
+    el.innerHTML = paymentMethods.map(m => `
+      <label class="card mb-2" style="padding:var(--nm-space-4);display:flex;align-items:center;gap:var(--nm-space-3);cursor:pointer;${selectedPayment === m.id ? "border:2px solid var(--nm-primary)" : ""}">
+        <input type="radio" name="payment" value="${Format.escapeHtml(m.id)}" ${selectedPayment === m.id ? "checked" : ""}>
+        <i class="fas ${PAYMENT_ICONS[m.id] || "fa-money-bill"}" style="font-size:1.4rem;color:var(--nm-primary)"></i>
+        <div><strong>${Format.escapeHtml(m.name)}</strong><div class="text-sm text-muted">${PAYMENT_HINTS[m.id] || ""}</div></div>
+      </label>`).join("");
+    el.querySelectorAll('input[name="payment"]').forEach(r => {
+      r.addEventListener("change", () => { selectedPayment = r.value; });
+    });
+  }
+
   function renderReview() {
     const addr = addresses.find(a => a.id === selectedAddress);
     const items = (cart && cart.items) || [];
@@ -115,7 +141,7 @@
       </div>
       <div class="card" style="padding:var(--nm-space-4)">
         <div class="summary-row"><span>Delivery</span><span>${deliveryOption === "express" ? "Express" : "Standard"}</span></div>
-        <div class="summary-row"><span>Payment</span><span>Cash on Delivery</span></div>
+        <div class="summary-row"><span>Payment</span><span>${Format.escapeHtml((paymentMethods.find(m => m.id === selectedPayment) || {}).name || selectedPayment)}</span></div>
       </div>`;
   }
 
@@ -127,10 +153,17 @@
       const res = await API.post("/orders/checkout", {
         address_id: selectedAddress,
         delivery_option: deliveryOption,
-        payment_method: "cod",
+        payment_method: selectedPayment,
         notes: $("order-notes").value,
       });
-      const order = res.data && res.data.order;
+      const payment = res.data && res.data.payment;
+      // Redirect-based gateways (e.g. Stripe Checkout) send the buyer to the
+      // provider's hosted page; the webhook marks the order paid on return.
+      if (payment && payment.checkout_url) {
+        toast("Redirecting to secure payment...");
+        window.location.href = payment.checkout_url;
+        return;
+      }
       toast("Order placed successfully!");
       setTimeout(() => {
         window.location.href = `/buyer/index.html#orders`;
@@ -176,6 +209,7 @@
 
     await loadAddresses();
     await loadDeliveryOptions();
+    await loadPaymentMethods();
 
     // Step 1 → 2
     addNavButtons($("step-address"), async () => {

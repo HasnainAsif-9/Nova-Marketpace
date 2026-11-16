@@ -48,6 +48,11 @@ def update_settings():
     update = {}
     for key, caster in allowed.items():
         if key in data:
+            # maintenance_mode must be a real JSON boolean — bool("false")
+            # would silently evaluate to True for string input.
+            if key == "maintenance_mode" and not isinstance(data[key], bool):
+                return fail("maintenance_mode must be true or false",
+                            "VALIDATION", 400)
             try:
                 val = caster(data[key])
             except (TypeError, ValueError):

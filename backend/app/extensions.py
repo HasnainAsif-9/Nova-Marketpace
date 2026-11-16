@@ -24,6 +24,23 @@ def get_db() -> Database:
     return _db
 
 
+def _ensure_ttl_index(collection, field, seconds, index_name=None):
+    """Create an index, upgrading an existing same-key index to add TTL.
+
+    Older deploys created plain indexes on these fields; MongoDB rejects a
+    same-name index with different options (IndexOptionsConflict), so drop
+    and recreate when that happens."""
+    name = index_name or f"{field}_1"
+    try:
+        collection.create_index(field, name=name, expireAfterSeconds=seconds)
+    except Exception:
+        try:
+            collection.drop_index(name)
+            collection.create_index(field, name=name, expireAfterSeconds=seconds)
+        except Exception:
+            pass
+
+
 def _create_indexes(db):
     db.users.create_index("email", unique=True, sparse=True)
     db.users.create_index("username", unique=True)
@@ -85,14 +102,20 @@ def _create_indexes(db):
     db.notifications.create_index([("user_id", 1), ("read", 1)])
     db.notifications.create_index("created_at")
 
-    db.audit_logs.create_index("created_at")
+    # Audit log retention: auto-delete entries older than 1 year.
+    _ensure_ttl_index(db.audit_logs, "created_at", 365 * 24 * 3600)
     db.audit_logs.create_index("actor_id")
     db.audit_logs.create_index("action")
 
     db.password_resets.create_index("token_hash", unique=True)
     db.password_resets.create_index("user_id")
-    db.password_resets.create_index("expires_at")
+    _ensure_ttl_index(db.password_resets, "expires_at", 0)
 
     db.email_verifications.create_index("token_hash", unique=True)
     db.email_verifications.create_index("user_id")
-    db.email_verifications.create_index("expires_at")
+    _ensure_ttl_index(db.email_verifications, "expires_at", 0)
+
+    # Refresh tokens: hashed, rotated on use; auto-expire with the JWT lifetime
+    db.refresh_tokens.create_index("token_hash", unique=True)
+    db.refresh_tokens.create_index("user_id")
+    _ensure_ttl_index(db.refresh_tokens, "expires_at", 0)

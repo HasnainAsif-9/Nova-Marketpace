@@ -274,6 +274,20 @@ def checkout():
                   details={"order_number": order_number, "total": total,
                            "sellers": len(seller_groups)}, ip=request.remote_addr)
 
+        # Order confirmation email — never let mail failure break checkout.
+        try:
+            from ..utils.mailer import send_email
+            from ..utils.email_templates import order_confirmation_email
+            order_url = (f"{current_app.config['FRONTEND_BASE_URL']}"
+                         "/buyer/index.html#orders")
+            subject, text, html = order_confirmation_email(
+                user.get("full_name") or user.get("username"),
+                order_number, total,
+                current_app.config["CURRENCY_SYMBOL"], order_url)
+            send_email(user["email"], subject, text, html=html)
+        except Exception:
+            current_app.logger.exception("Failed to send order confirmation email")
+
         order = db.orders.find_one({"_id": parent_id})
         resp = {"order": serialize(order)}
         if payment_doc.get("checkout_url"):

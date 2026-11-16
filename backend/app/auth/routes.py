@@ -34,10 +34,59 @@ def _issue_tokens(user):
     )
     refresh = jwt.encode(
         {"sub": str(user["_id"]), "type": "refresh",
-         "tv": user.get("token_version", 0), "iat": now, "exp": refresh_exp},
+         "tv": user.get("token_version", 0), "jti": secrets.token_hex(8),
+         "iat": now, "exp": refresh_exp},
         current_app.config["JWT_SECRET_KEY"], algorithm="HS256",
     )
     return access, refresh, access_exp, refresh_exp
+
+
+def _store_refresh_token(user_id, refresh):
+    """Record an issued refresh token for rotation/reuse detection.
+    One doc per session, so multiple devices can stay logged in."""
+    now = datetime.now(timezone.utc)
+    get_db().refresh_tokens.insert_one({
+        "token_hash": _hash_token(refresh),
+        "user_id": user_id,
+        "rotated": False,
+        "expires_at": now + timedelta(
+            days=current_app.config["JWT_REFRESH_TOKEN_EXPIRES_DAYS"]),
+        "created_at": now,
+    })
+
+
+def _consume_refresh_token(db, token, user):
+    """Validate and rotate a refresh token.
+
+    Returns "ok" (token consumed, new pair may be issued), "invalid"
+    (unknown/revoked token — plain 401), or "reuse" (a rotated-out token
+    was replayed — possible theft; caller must revoke all sessions)."""
+    token_hash = _hash_token(token)
+    rec = db.refresh_tokens.find_one({"token_hash": token_hash})
+    if rec is None:
+        # Legacy token issued before rotation tracking — consume it so any
+        # replay is caught as reuse.
+        now = datetime.now(timezone.utc)
+        db.refresh_tokens.insert_one({
+            "token_hash": token_hash,
+            "user_id": user["_id"],
+            "rotated": True,
+            "expires_at": now + timedelta(
+                days=current_app.config["JWT_REFRESH_TOKEN_EXPIRES_DAYS"]),
+            "created_at": now,
+        })
+        return "ok"
+    if rec.get("revoked"):
+        return "invalid"
+    if rec.get("rotated"):
+        return "reuse"
+    if rec.get("user_id") != user["_id"]:
+        return "invalid"
+    # Atomically rotate — a concurrent refresh loses the race and is reuse.
+    updated = db.refresh_tokens.find_one_and_update(
+        {"_id": rec["_id"], "rotated": {"$ne": True}},
+        {"$set": {"rotated": True}})
+    return "ok" if updated is not None else "reuse"
 
 
 def _set_auth_cookies(response, access, refresh, access_exp, refresh_exp):
@@ -144,6 +193,7 @@ def register():
     _send_verification_email(user_doc)
 
     access, refresh, aexp, rexp = _issue_tokens(user_doc)
+    _store_refresh_token(user_doc["_id"], refresh)
     resp = make_response(ok({"user": _public_user(user_doc), "access_token": access},
                             "Registration successful", 201))
     return _set_auth_cookies(resp, access, refresh, aexp, rexp)
@@ -189,12 +239,21 @@ def login():
               target_type="user", target_id=str(user["_id"]), ip=request.remote_addr)
 
     access, refresh, aexp, rexp = _issue_tokens(user)
+    _store_refresh_token(user["_id"], refresh)
     resp = make_response(ok({"user": _public_user(user), "access_token": access}, "Login successful"))
     return _set_auth_cookies(resp, access, refresh, aexp, rexp)
 
 
 @bp.post("/logout")
 def logout():
+    # Revoke this session's refresh token so it can't be reused after logout.
+    # "revoked" (not delete) so a replay is rejected without looking like a
+    # never-tracked legacy token.
+    token = request.cookies.get(REFRESH_COOKIE)
+    if token:
+        get_db().refresh_tokens.update_one(
+            {"token_hash": _hash_token(token)},
+            {"$set": {"revoked": True}})
     resp = make_response(ok(message="Logged out"))
     resp.delete_cookie(ACCESS_COOKIE, path="/")
     resp.delete_cookie(REFRESH_COOKIE, path="/api/auth")
@@ -220,10 +279,24 @@ def refresh():
             return unauthorized("Account not active")
         if payload.get("tv", 0) != user.get("token_version", 0):
             return unauthorized("Token revoked")
+        # Refresh-token rotation with reuse detection: a rotated-out token
+        # being replayed means possible theft — revoke ALL sessions.
+        result = _consume_refresh_token(get_db(), token, user)
+        if result == "reuse":
+            get_db().users.update_one(
+                {"_id": user["_id"]}, {"$inc": {"token_version": 1}})
+            get_db().refresh_tokens.delete_many({"user_id": user["_id"]})
+            audit_log("auth.refresh_reuse_detected", actor_id=user["_id"],
+                      actor_role=user["role"], target_type="user",
+                      target_id=str(user["_id"]), ip=request.remote_addr)
+            return unauthorized("Session expired. Please sign in again.")
+        if result != "ok":
+            return unauthorized("Invalid or expired refresh token")
     except Exception:
         return unauthorized("Invalid or expired refresh token")
 
     access, refresh, aexp, rexp = _issue_tokens(user)
+    _store_refresh_token(user["_id"], refresh)
     resp = make_response(ok({"access_token": access}, "Token refreshed"))
     return _set_auth_cookies(resp, access, refresh, aexp, rexp)
 
@@ -249,12 +322,13 @@ def change_password():
         return fail("Current password is incorrect", "VALIDATION", 400)
     if not validate_password(new):
         return fail("New password must be at least 8 characters", "VALIDATION", 400)
-    get_db().users.update_one(
+    db = get_db()
+    db.users.update_one(
         {"_id": user["_id"]},
         {"$set": {"password_hash": generate_password_hash(new),
                   "updated_at": datetime.now(timezone.utc)},
-         "$inc": {"token_version": 1}}
-    )
+         "$inc": {"token_version": 1}})
+    db.refresh_tokens.delete_many({"user_id": user["_id"]})
     audit_log("auth.password_change", actor_id=user["_id"], actor_role=user["role"],
               target_type="user", target_id=str(user["_id"]), ip=request.remote_addr)
     return ok(message="Password changed")
@@ -321,6 +395,7 @@ def reset_password():
         {"$set": {"password_hash": generate_password_hash(new),
                   "updated_at": now},
          "$inc": {"token_version": 1}})
+    db.refresh_tokens.delete_many({"user_id": user["_id"]})
     db.password_resets.update_one({"_id": record["_id"]}, {"$set": {"used": True}})
     audit_log("auth.password_reset", actor_id=user["_id"], actor_role=user["role"],
               target_type="user", target_id=str(user["_id"]), ip=request.remote_addr)

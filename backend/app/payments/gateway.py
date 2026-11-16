@@ -16,12 +16,11 @@ To add a provider:
   3. Enable it via PAYMENT_METHODS_ENABLED env (comma-separated).
   4. Implement create_payment() and handle_webhook() with the provider SDK.
 
-TODO(payment): StripeGateway — PaymentIntent/Checkout Session + webhook
-signature verification (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET).
 TODO(payment): JazzCashGateway / EasyPaisaGateway for the PK market —
 save-card / wallet flow with HMAC integrity hash (merchant credentials).
 """
 import logging
+from datetime import datetime, timezone
 
 from flask import current_app
 
@@ -56,13 +55,17 @@ class CODGateway(PaymentGateway):
 
 
 class StripeGateway(PaymentGateway):
-    """TODO(payment): implement once STRIPE_SECRET_KEY is configured.
+    """Stripe Checkout — redirect flow.
 
-    create_payment: create a Stripe Checkout Session / PaymentIntent for
-    `payment['amount']` (currency from app config), store gateway_ref +
-    checkout_url on the payment doc, keep status 'pending' until webhook.
-    handle_webhook: verify stripe-signature header, mark payment 'paid' /
-    'failed' and sync order.payment_status.
+    create_payment() opens a Stripe Checkout Session and returns
+    {gateway_ref: <session id>, checkout_url: <hosted page url>}; the
+    frontend redirects the buyer there. Payment stays 'pending' until the
+    webhook confirms it.
+
+    Required env: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and
+    PAYMENT_METHODS_ENABLED including 'stripe'.
+    Note: Stripe does not onboard businesses registered in Pakistan —
+    a Stripe account requires a supported-country entity.
     """
 
     method = "stripe"
@@ -70,8 +73,89 @@ class StripeGateway(PaymentGateway):
     def is_available(self):
         return bool(current_app.config.get("STRIPE_SECRET_KEY"))
 
+    def _stripe(self):
+        import stripe
+        stripe.api_key = current_app.config["STRIPE_SECRET_KEY"]
+        return stripe
+
     def create_payment(self, order, payment):
-        raise NotImplementedError("Stripe gateway not implemented yet")
+        from ..extensions import get_db
+        stripe = self._stripe()
+        base = current_app.config["FRONTEND_BASE_URL"].rstrip("/")
+        buyer = get_db().users.find_one({"_id": order["buyer_id"]})
+        order_id = str(order["_id"])
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            client_reference_id=order_id,
+            customer_email=(buyer or {}).get("email"),
+            line_items=[{
+                "quantity": 1,
+                "price_data": {
+                    "currency": current_app.config["CURRENCY"].lower(),
+                    "unit_amount": int(round(payment["amount"] * 100)),
+                    "product_data": {
+                        "name": f"Order {order['order_number']}",
+                    },
+                },
+            }],
+            metadata={"order_id": order_id},
+            payment_intent_data={"metadata": {"order_id": order_id}},
+            success_url=f"{base}/buyer/index.html?payment=success",
+            cancel_url=f"{base}/checkout.html?payment=cancelled",
+        )
+        return {"gateway_ref": session.id, "checkout_url": session.url}
+
+    def handle_webhook(self, headers, raw_body):
+        from ..extensions import get_db
+        from ..utils.audit import audit_log
+        stripe = self._stripe()
+        secret = current_app.config.get("STRIPE_WEBHOOK_SECRET")
+        if not secret:
+            raise ValueError("STRIPE_WEBHOOK_SECRET is not configured")
+        event = stripe.Webhook.construct_event(
+            raw_body, headers.get("Stripe-Signature"), secret)
+
+        db = get_db()
+        etype = event["type"]
+        obj = event["data"]["object"]
+        session_id = obj.get("id")
+        if not session_id:
+            return
+
+        payment = db.payments.find_one({"gateway_ref": session_id})
+        if not payment:
+            logger.warning("Stripe webhook for unknown session %s", session_id)
+            return
+        if payment.get("status") == "paid":
+            return  # idempotent — already processed
+
+        now = datetime.now(timezone.utc)
+        order_id = payment["order_id"]
+
+        if etype in ("checkout.session.completed",
+                     "checkout.session.async_payment_succeeded"):
+            db.payments.update_one(
+                {"_id": payment["_id"]},
+                {"$set": {"status": "paid", "paid_at": now, "updated_at": now,
+                          "gateway_event": etype}})
+            db.orders.update_one(
+                {"_id": order_id},
+                {"$set": {"payment_status": "paid", "updated_at": now}})
+            audit_log("payment.stripe_paid", target_type="order",
+                      target_id=str(order_id),
+                      details={"session": session_id})
+        elif etype in ("checkout.session.async_payment_failed",
+                       "checkout.session.expired"):
+            db.payments.update_one(
+                {"_id": payment["_id"]},
+                {"$set": {"status": "failed", "updated_at": now,
+                          "gateway_event": etype}})
+            db.orders.update_one(
+                {"_id": order_id},
+                {"$set": {"payment_status": "failed", "updated_at": now}})
+            audit_log("payment.stripe_failed", target_type="order",
+                      target_id=str(order_id),
+                      details={"session": session_id, "event": etype})
 
 
 class JazzCashGateway(PaymentGateway):
