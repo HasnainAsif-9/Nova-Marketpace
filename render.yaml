@@ -13,7 +13,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.8
       - key: DATABASE_NAME
-        value: marketplace
+        value: novamarket
       - key: MARKETPLACE_NAME
         value: NovaMarket
       - key: CURRENCY

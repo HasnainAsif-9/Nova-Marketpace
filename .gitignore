@@ -5,6 +5,9 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+secrets*.txt
 
 # Node (if any tooling added later)
 node_modules/

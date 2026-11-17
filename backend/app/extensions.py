@@ -12,7 +12,12 @@ def init_db(app):
         import mongomock
         _client = mongomock.MongoClient()
     else:
-        _client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+        _client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            socketTimeoutMS=10000,
+        )
     _db = _client[app.config["DATABASE_NAME"]]
     _create_indexes(_db)
     return _db

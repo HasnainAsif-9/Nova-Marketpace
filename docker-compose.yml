@@ -10,7 +10,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
       MONGODB_URI: mongodb://${MONGO_USER:-marketplace}:${MONGO_PASSWORD:?Set MONGO_PASSWORD in .env}@mongo:27017/?authSource=admin
-      DATABASE_NAME: ${DATABASE_NAME:-marketplace}
+      DATABASE_NAME: ${DATABASE_NAME:-novamarket}
       MARKETPLACE_NAME: ${MARKETPLACE_NAME:-NovaMarket}
       CURRENCY: ${CURRENCY:-PKR}
       CURRENCY_SYMBOL: ${CURRENCY_SYMBOL:-Rs.}

@@ -19,7 +19,7 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRES_DAYS", "30"))
 
     MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    DATABASE_NAME = os.getenv("DATABASE_NAME", "marketplace")
+    DATABASE_NAME = os.getenv("DATABASE_NAME", "novamarket")
 
     MARKETPLACE_NAME = os.getenv("MARKETPLACE_NAME", "NovaMarket")
     CURRENCY = os.getenv("CURRENCY", "PKR")

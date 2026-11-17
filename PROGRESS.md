@@ -1,6 +1,13 @@
 # NovaMarket — Build Progress
 
-## Status: ALL PHASES COMPLETE (1–20) + production readiness pass. Tests: 70/70 passing. Security audit: SECURITY_AUDIT.md. Deployment guide: DEPLOYMENT.md. Backup at marketplace-backup-20261112-120311.
+## Status: ALL PHASES COMPLETE (1–20) + production readiness pass. Tests: 74/74 passing. Security audit: SECURITY_AUDIT.md. Deployment guide: DEPLOYMENT.md. Backup at marketplace-backup-20261112-120311.
+
+## Deployment prep (2026-11-17)
+- GitHub: pushed to https://github.com/HasnainAsif-9/Nova-Marketpace (public, secrets verified excluded)
+- Database name standardized to `novamarket` everywhere (config default, render.yaml, docker-compose, .env.example); Atlas app user should be `novamarket_app` with readWrite on `novamarket` only
+- `backend/.env.production` (git-ignored) holds Render-ready secrets — paste into Render dashboard
+- MongoClient timeouts added (serverSelection/connect 5s, socket 10s)
+- Remaining: Atlas cluster + Render deploy + SMTP (see RENDER_DEPLOYMENT.md)
 
 ## Extensibility added (2026-11-12)
 - Payment gateway abstraction: `backend/app/payments/gateway.py` — `PaymentGateway` base, `CODGateway` live, `StripeGateway`/`JazzCashGateway`/`EasyPaisaGateway` stubs gated on credentials. Enable via `PAYMENT_METHODS_ENABLED` + provider env keys (see `.env.example`). New endpoints: `GET /api/payments/methods`, `POST /api/payments/webhook/<method>`.

@@ -31,17 +31,28 @@ git push -u origin main
 
 1. Create a free account at https://www.mongodb.com/atlas → **Build a Database** →
    choose the **Free M0** tier (AWS region closest to your Render region).
-2. **Database Access → Add New Database User**: username e.g. `novamarket`,
-   password = a strong generated password (save it).
-3. **Network Access → Add IP Address → Allow Access from Anywhere**
-   (`0.0.0.0/0`). Required because Render outbound IPs are dynamic.
-   (Atlas free tier shows a security warning for this — acceptable for a
-   marketplace demo; the DB user still requires auth.)
+2. **Database Access → Add New Database User**:
+   - Username: `novamarket_app`
+   - Password: a strong generated password (save it — it goes in the URI)
+   - Role: **`readWrite` on database `novamarket` only**
+     (Atlas → Specific Privilege: Database `novamarket` → read and write).
+     Do NOT grant `readWriteAnyDatabase` or `atlasAdmin` — least privilege.
+3. **Network Access**: Render's outbound IPs are dynamic, so the pragmatic
+   choice on the free tier is **Allow Access from Anywhere (`0.0.0.0/0`)**.
+   Security implication: the cluster port is reachable from the internet —
+   it is still protected by database authentication and TLS, and the
+   `novamarket_app` user can only touch the `novamarket` database, but you
+   should still use a strong unique password. If you later move to a paid
+   Render plan with static outbound IPs, replace `0.0.0.0/0` with those IPs.
 4. **Connect → Drivers → Python**: copy the connection string, it looks like:
    ```
-   mongodb+srv://novamarket:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+   mongodb+srv://novamarket_app:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
    ```
-   Replace `<password>` with the URL-encoded database user password.
+   - Replace `<password>` with the URL-encoded database user password.
+   - Append the database name so the app lands in `novamarket`:
+     `...mongodb.net/novamarket?retryWrites=true&w=majority`
+   - The app also sets `DATABASE_NAME=novamarket` (see `render.yaml`), so
+     the URI path and env var agree.
 
 ## Step 3 — Deploy on Render
 
